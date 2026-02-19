@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENT
+  STAFF
+  ADMIN
+  ADMIN_TAZ
+}
+
+enum OrderType {
+  DELIVERY
+  PICKUP
+  TABLE
+}
+
+enum OrderStatus {
+  NEW
+  PREPARING
+  READY
+  DELIVERED
+  CANCELED
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum SenderRole {
+  CLIENT
+  STAFF
+  ADMIN
+  ADMIN_TAZ
+}
+
+enum ExpenseCategory {
+  RENT
+  SUPPLIES
+  PAYROLL
+  UTILITIES
+  MAINTENANCE
+  MARKETING
+  OTHER
+}
+
+enum ExpenseMethod {
+  CASH
+  PIX
+  CREDIT_CARD
+  DEBIT_CARD
+  TRANSFER
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         Role      @default(CLIENT)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  orders       Order[]
+  reservations Reservation[]
+  tickets      Ticket[]
+  expenses     Expense[]
+  adjustments  RevenueAdjustment[]
+  auditLogs    AuditLog[]
+}
+
+model MenuCategory {
+  id        String     @id @default(cuid())
+  name      String
+  sortOrder Int        @default(0)
+  items     MenuItem[]
+}
+
+model MenuItem {
+  id          String      @id @default(cuid())
+  categoryId  String
+  name        String
+  description String
+  price       Decimal     @db.Decimal(10, 2)
+  isAvailable Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  category    MenuCategory @relation(fields: [categoryId], references: [id])
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  userId    String
+  type      OrderType
+  status    OrderStatus @default(NEW)
+  total     Decimal     @db.Decimal(10, 2)
+  paid      Boolean     @default(false)
+  notes     String?
+  address   String?
+  createdAt DateTime    @default(now())
+  user      User        @relation(fields: [userId], references: [id])
+  items     OrderItem[]
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  menuItemId String
+  quantity  Int
+  unitPrice Decimal  @db.Decimal(10, 2)
+  notes     String?
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem  MenuItem @relation(fields: [menuItemId], references: [id])
+}
+
+model Reservation {
+  id         String            @id @default(cuid())
+  userId     String
+  dateTime   DateTime
+  peopleCount Int
+  status     ReservationStatus @default(PENDING)
+  notes      String?
+  user       User              @relation(fields: [userId], references: [id])
+}
+
+model Ticket {
+  id        String       @id @default(cuid())
+  userId    String
+  status    TicketStatus @default(OPEN)
+  subject   String
+  createdAt DateTime     @default(now())
+  user      User         @relation(fields: [userId], references: [id])
+  messages  TicketMessage[]
+}
+
+model TicketMessage {
+  id         String     @id @default(cuid())
+  ticketId   String
+  senderRole SenderRole
+  message    String
+  createdAt  DateTime   @default(now())
+  ticket     Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+model Expense {
+  id              String          @id @default(cuid())
+  createdByUserId String
+  date            DateTime
+  amount          Decimal         @db.Decimal(10, 2)
+  category        ExpenseCategory
+  method          ExpenseMethod
+  vendor          String?
+  notes           String?
+  createdBy       User            @relation(fields: [createdByUserId], references: [id])
+}
+
+model RevenueAdjustment {
+  id              String   @id @default(cuid())
+  createdByUserId String
+  date            DateTime
+  amount          Decimal  @db.Decimal(10, 2)
+  reason          String
+  createdBy       User     @relation(fields: [createdByUserId], references: [id])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String
+  action      String
+  entityType  String
+  entityId    String
+  beforeJson  Json?
+  afterJson   Json?
+  createdAt   DateTime @default(now())
+  actor       User     @relation(fields: [actorUserId], references: [id])
+}
