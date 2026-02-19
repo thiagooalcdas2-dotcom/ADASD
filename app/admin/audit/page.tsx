@@ -1,0 +1,1 @@
+export default function AdminAuditPage() { return <div className="py-6"><h1 className="text-2xl font-bold">Auditoria</h1><p>Logs de alterações críticas em pedidos, cardápio, finanças e usuários.</p></div>; }

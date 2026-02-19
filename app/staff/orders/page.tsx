@@ -1,0 +1,1 @@
+export default function StaffOrdersPage() { return <div className="py-6"><h1 className="text-2xl font-bold">Fila de Pedidos</h1><p>Kanban/lista novo → preparando → pronto → entregue/cancelado.</p></div>; }
